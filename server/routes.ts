@@ -208,7 +208,7 @@ export async function registerRoutes(
 
   app.patch(api.friends.updateRequest.path, verifyToken, async (req: AuthRequest, res) => {
     try {
-      const requestId = req.params.id as string;
+      const requestId = String(req.params.id);
       const { status } = api.friends.updateRequest.input.parse(req.body);
       
       // Get the request first to know who the sender and receiver are
@@ -252,7 +252,7 @@ export async function registerRoutes(
 
   app.get(api.friends.status.path, verifyToken, async (req: AuthRequest, res) => {
     try {
-      const otherUserId = req.params.userId as string;
+      const otherUserId = String(req.params.userId);
       
       // Check if they are already friends first
       const areFriends = await storage.areFriends(req.userId!, otherUserId);
@@ -356,7 +356,7 @@ export async function registerRoutes(
 
   app.get(api.conversations.get.path, verifyToken, async (req: AuthRequest, res) => {
     try {
-      const conversationId = req.params.id as string;
+      const conversationId = String(req.params.id);
       
       const isParticipant = await storage.isUserInConversation(req.userId!, conversationId);
       
@@ -384,7 +384,7 @@ export async function registerRoutes(
 
   app.get(api.conversations.messages.path, verifyToken, async (req: AuthRequest, res) => {
     try {
-      const conversationId = req.params.id as string;
+      const conversationId = String(req.params.id);
       
       const isParticipant = await storage.isUserInConversation(req.userId!, conversationId);
       
@@ -403,7 +403,7 @@ export async function registerRoutes(
 
   app.post(api.conversations.markRead.path, verifyToken, async (req: AuthRequest, res) => {
     try {
-      const conversationId = req.params.id as string;
+      const conversationId = String(req.params.id);
       
       const isParticipant = await storage.isUserInConversation(req.userId!, conversationId);
       

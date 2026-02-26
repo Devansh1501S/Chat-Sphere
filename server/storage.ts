@@ -145,7 +145,7 @@ export class DatabaseStorage implements IStorage {
         const lastMsg = lastMessages[0];
         let sender;
         if (lastMsg.senderId) {
-          sender = await this.getUserById(lastMsg.senderId);
+          sender = await this.getUserById(String(lastMsg.senderId));
         }
         lastMessage = { ...lastMsg, sender: sender! };
       }
@@ -315,7 +315,7 @@ export class DatabaseStorage implements IStorage {
     }
 
     if (message.senderId) {
-      const sender = await this.getUserById(message.senderId);
+      const sender = await this.getUserById(String(message.senderId));
       return {
         ...message,
         sender: sender!,
@@ -606,7 +606,7 @@ export class MemStorage implements IStorage {
           if ((lastMessage as any).isSystem) {
             lastMessageWithSender = { ...lastMessage, sender: undefined as any };
           } else if (lastMessage.senderId) {
-            const sender = await this.getUserById(lastMessage.senderId);
+            const sender = await this.getUserById(String(lastMessage.senderId));
             if (sender) {
               lastMessageWithSender = { ...lastMessage, sender };
             }
@@ -744,7 +744,7 @@ export class MemStorage implements IStorage {
     }
 
     if (message.senderId) {
-      const sender = await this.getUserById(message.senderId);
+      const sender = await this.getUserById(String(message.senderId));
       this.save();
       return { ...message, sender: sender! };
     }
