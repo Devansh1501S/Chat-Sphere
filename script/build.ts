@@ -33,10 +33,20 @@ const allowlist = [
 ];
 
 async function buildAll() {
+  const serverOnly = process.argv.includes("--server-only");
+  
   await rm("dist", { recursive: true, force: true });
 
-  console.log("building client...");
-  await viteBuild();
+  if (!serverOnly) {
+    console.log("building client...");
+    await viteBuild();
+  } else {
+    console.log("skipping client build (server-only mode)...");
+    // Create an empty public directory so serveStatic doesn't crash if it looks for it
+    const fs = await import("fs/promises");
+    await fs.mkdir("dist/public", { recursive: true });
+    await fs.writeFile("dist/public/index.html", "Backend only - check Vercel for frontend.");
+  }
 
   console.log("building server...");
   const pkg = JSON.parse(await readFile("package.json", "utf-8"));
