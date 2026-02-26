@@ -1,8 +1,5 @@
-"use client"
-
 import * as React from "react"
 import * as AvatarPrimitive from "@radix-ui/react-avatar"
-
 import { cn } from "@/lib/utils"
 
 const Avatar = React.forwardRef<
@@ -11,9 +8,8 @@ const Avatar = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <AvatarPrimitive.Root
     ref={ref}
-    className={cn(`
-      after:content-[''] after:block after:absolute after:inset-0 after:rounded-full after:pointer-events-none after:border after:border-black/10 dark:after:border-white/10
-      relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full`,
+    className={cn(
+      "relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full shadow-sm border border-border/50",
       className
     )}
     {...props}
@@ -35,14 +31,15 @@ AvatarImage.displayName = AvatarPrimitive.Image.displayName
 
 const AvatarFallback = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Fallback>,
-  React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Fallback>
->(({ className, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Fallback> & { color?: string }
+>(({ className, color, style, ...props }, ref) => (
   <AvatarPrimitive.Fallback
     ref={ref}
     className={cn(
-      "flex h-full w-full items-center justify-center rounded-full bg-muted",
+      "flex h-full w-full items-center justify-center rounded-full text-white font-medium text-sm shadow-inner",
       className
     )}
+    style={{ backgroundColor: color || "var(--primary)", ...style }}
     {...props}
   />
 ))

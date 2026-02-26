@@ -1,0 +1,100 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api, buildUrl } from "@shared/routes";
+import { apiFetch } from "@/lib/api-client";
+import type { CreateConversationInput, SendMessageInput } from "@shared/routes";
+
+export function useConversations() {
+  return useQuery({
+    queryKey: [api.conversations.list.path],
+    queryFn: async () => {
+      const data = await apiFetch(api.conversations.list.path);
+      return api.conversations.list.responses[200].parse(data);
+    },
+  });
+}
+
+export function useConversation(id: string | null) {
+  return useQuery({
+    queryKey: [api.conversations.get.path, id],
+    queryFn: async () => {
+      if (!id) return null;
+      const url = buildUrl(api.conversations.get.path, { id });
+      const data = await apiFetch(url);
+      return api.conversations.get.responses[200].parse(data);
+    },
+    enabled: !!id,
+  });
+}
+
+export function useMessages(conversationId: string | null) {
+  return useQuery({
+    queryKey: [api.conversations.messages.path, conversationId],
+    queryFn: async () => {
+      if (!conversationId) return [];
+      const url = buildUrl(api.conversations.messages.path, { id: conversationId });
+      const data = await apiFetch(url);
+      return api.conversations.messages.responses[200].parse(data);
+    },
+    enabled: !!conversationId,
+  });
+}
+
+export function useUsers() {
+  return useQuery({
+    queryKey: [api.users.list.path],
+    queryFn: async () => {
+      const data = await apiFetch(api.users.list.path);
+      return api.users.list.responses[200].parse(data);
+    },
+  });
+}
+
+export function useCreateConversation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: CreateConversationInput) => {
+      const validated = api.conversations.create.input.parse(data);
+      const res = await apiFetch(api.conversations.create.path, {
+        method: api.conversations.create.method,
+        body: JSON.stringify(validated),
+      });
+      return api.conversations.create.responses[201].parse(res);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.conversations.list.path] });
+    },
+  });
+}
+
+export function useSendMessage() {
+  // We use socket to listen to our own messages to update cache,
+  // but we also rely on the POST response just in case.
+  return useMutation({
+    mutationFn: async (data: SendMessageInput) => {
+      const validated = api.messages.send.input.parse(data);
+      const res = await apiFetch(api.messages.send.path, {
+        method: api.messages.send.method,
+        body: JSON.stringify(validated),
+      });
+      return api.messages.send.responses[201].parse(res);
+    },
+  });
+}
+
+export function useMarkAsRead() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (conversationId: string) => {
+      const url = buildUrl(api.conversations.markRead.path, { id: conversationId });
+      await apiFetch(url, { method: api.conversations.markRead.method });
+    },
+    onSuccess: (_, conversationId) => {
+      queryClient.setQueryData([api.conversations.list.path], (old: any) => {
+        if (!old) return old;
+        return old.map((conv: any) => 
+          conv.id === conversationId ? { ...conv, unreadCount: 0 } : conv
+        );
+      });
+    },
+  });
+}
