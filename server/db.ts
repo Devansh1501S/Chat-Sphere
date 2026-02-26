@@ -17,8 +17,11 @@ export const pool = process.env.DATABASE_URL
   : null;
 
 if (pool) {
-  pool.on('error', (err) => {
+  pool.on('error', (err: any) => {
     console.error('Unexpected error on idle database client', err);
+    if (err.code === 'ENETUNREACH' || err.code === 'ETIMEDOUT') {
+      console.log('💡 TIP: If using Supabase, please use the "Transaction Pooler" connection string (Port 6543) instead of the direct connection string (Port 5432) to avoid IPv6 connectivity issues on Render.');
+    }
   });
 }
 
