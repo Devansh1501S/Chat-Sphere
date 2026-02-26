@@ -18,9 +18,6 @@ process.on("unhandledRejection", (reason, promise) => {
 const app = express();
 const httpServer = createServer(app);
 
-// Export app and a setup promise for serverless environments
-export { app };
-
 declare module "http" {
   interface IncomingMessage {
     rawBody: unknown;
@@ -74,7 +71,7 @@ app.use((req, res, next) => {
   next();
 });
 
-export const setupPromise = (async () => {
+(async () => {
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
@@ -97,22 +94,14 @@ export const setupPromise = (async () => {
     await setupVite(httpServer, app);
   }
 
-  return app;
-})();
-
-(async () => {
-  await setupPromise;
-
-  if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
-    const port = parseInt(process.env.PORT || "5000", 10);
-    httpServer.listen(
-      {
-        port,
-        host: "127.0.0.1",
-      },
-      () => {
-        log(`serving on port ${port}`);
-      },
-    );
-  }
+  const port = parseInt(process.env.PORT || "5000", 10);
+  httpServer.listen(
+    {
+      port,
+      host: "0.0.0.0", // Listen on all interfaces for Render
+    },
+    () => {
+      log(`serving on port ${port}`);
+    },
+  );
 })();
