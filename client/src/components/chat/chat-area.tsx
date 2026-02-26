@@ -16,11 +16,18 @@ export default function ChatArea({ conversationId }: { conversationId: string })
   const { data: messages, isLoading: msgsLoading } = useMessages(conversationId);
   const sendMessage = useSendMessage();
   const markRead = useMarkAsRead();
-  const { emitTyping, typingUsers } = useSocket();
+  const { emitTyping, typingUsers, socket, isConnected } = useSocket();
   
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
+
+  // Join socket room when opening a conversation
+  useEffect(() => {
+    if (conversationId && socket && isConnected) {
+      socket.emit("join", { conversationId });
+    }
+  }, [conversationId, socket, isConnected]);
 
   // Mark as read when conversation is opened or new messages arrive
   useEffect(() => {

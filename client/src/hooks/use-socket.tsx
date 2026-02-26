@@ -142,13 +142,22 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     newSocket.on("presence", (raw) => {
       try {
         const data = ws.receive.presence.parse(raw);
-        
-        // Update user cache if needed, or trigger refetches
-        // Simplest is to invalidate users list and specific conversations
         queryClient.invalidateQueries({ queryKey: [api.users.list.path] });
         queryClient.invalidateQueries({ queryKey: [api.conversations.list.path] });
       } catch (err) {
         console.error("Failed to parse presence", err);
+      }
+    });
+
+    // When a new conversation is created for this user, join its room and refresh list
+    const userId = (newSocket as any).query?.token ? undefined : newSocket.id;
+    newSocket.onAny((event: string) => {
+      if (event.endsWith(":conversation:update") || event.endsWith(":conversation")) {
+        queryClient.invalidateQueries({ queryKey: [api.conversations.list.path] });
+        // Re-join any new rooms we might not be in
+        queryClient.getQueryData<any[]>([api.conversations.list.path])?.forEach((conv: any) => {
+          newSocket.emit("join", { conversationId: conv.id });
+        });
       }
     });
 

@@ -43,7 +43,7 @@ export default function NewChatDialog({ open, onOpenChange }: { open: boolean, o
     
     try {
       const conv = await createConv.mutateAsync({
-        participantIds: [...selectedIds, currentUser!.id],
+        participantIds: selectedIds,
         isGroup: isGroupMode,
         name: isGroupMode ? groupName : undefined
       });

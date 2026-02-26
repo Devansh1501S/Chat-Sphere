@@ -47,6 +47,16 @@ export function setupSocketIO(httpServer: HttpServer) {
       isOnline: true,
     });
 
+    // Auto-join all conversations for this user
+    try {
+      const userConversations = await storage.getConversationsByUserId(userId);
+      for (const conv of userConversations) {
+        socket.join(`conversation:${conv.id}`);
+      }
+    } catch (err) {
+      console.error("Failed to auto-join conversations:", err);
+    }
+
     socket.on("join", async (data: { conversationId: string }) => {
       const { conversationId } = data;
       

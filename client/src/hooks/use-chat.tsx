@@ -67,8 +67,7 @@ export function useCreateConversation() {
 }
 
 export function useSendMessage() {
-  // We use socket to listen to our own messages to update cache,
-  // but we also rely on the POST response just in case.
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: SendMessageInput) => {
       const validated = api.messages.send.input.parse(data);
@@ -77,6 +76,28 @@ export function useSendMessage() {
         body: JSON.stringify(validated),
       });
       return api.messages.send.responses[201].parse(res);
+    },
+    onSuccess: (newMessage: any) => {
+      // Immediately update the messages cache for the sender
+      queryClient.setQueryData(
+        [api.conversations.messages.path, newMessage.conversationId],
+        (old: any) => {
+          if (!old) return [newMessage];
+          if (old.some((m: any) => m.id === newMessage.id)) return old;
+          return [...old, newMessage];
+        }
+      );
+      // Update conversations list to reflect new last message
+      queryClient.setQueryData([api.conversations.list.path], (old: any) => {
+        if (!old) return old;
+        return old.map((conv: any) =>
+          conv.id === newMessage.conversationId
+            ? { ...conv, lastMessage: newMessage, lastMessageAt: newMessage.createdAt, unreadCount: 0 }
+            : conv
+        ).sort((a: any, b: any) =>
+          new Date(b.lastMessageAt || b.createdAt).getTime() - new Date(a.lastMessageAt || a.createdAt).getTime()
+        );
+      });
     },
   });
 }
