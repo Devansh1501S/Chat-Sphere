@@ -36,8 +36,9 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Initialize socket connection
-    const newSocket = io("/", {
+    // Initialize socket connection. If VITE_API_URL is set (e.g. split deployment), use it.
+    const socketUrl = import.meta.env.VITE_API_URL || "/";
+    const newSocket = io(socketUrl, {
       path: "/ws",
       query: { token },
       transports: ["websocket", "polling"],

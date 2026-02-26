@@ -1,3 +1,6 @@
+// Base URL for API calls. If VITE_API_URL is set (e.g. for split deployment), use it.
+const API_BASE = import.meta.env.VITE_API_URL || "";
+
 // Custom fetcher that injects the JWT token from localStorage
 export async function apiFetch(endpoint: string, options: RequestInit = {}) {
   const token = localStorage.getItem("chat_token");
@@ -10,7 +13,10 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}) {
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(endpoint, {
+  // Handle both relative and absolute paths
+  const url = endpoint.startsWith("http") ? endpoint : `${API_BASE}${endpoint}`;
+
+  const response = await fetch(url, {
     ...options,
     headers,
   });

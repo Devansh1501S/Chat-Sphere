@@ -2,6 +2,7 @@ if (process.env.NODE_ENV !== "production") {
   await import("dotenv/config");
 }
 import express, { type Request, Response, NextFunction } from "express";
+import cors from "cors";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
@@ -16,6 +17,13 @@ process.on("unhandledRejection", (reason, promise) => {
 });
 
 const app = express();
+
+// Allow CORS for split deployments (e.g. Vercel frontend calling Render backend)
+app.use(cors({
+  origin: true, // Allow all origins in production or configure to your Vercel URL
+  credentials: true
+}));
+
 const httpServer = createServer(app);
 
 declare module "http" {
