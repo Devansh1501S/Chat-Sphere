@@ -149,10 +149,27 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    // When a new conversation is created for this user, join its room and refresh list
-    const userId = (newSocket as any).query?.token ? undefined : newSocket.id;
-    newSocket.onAny((event: string) => {
-      if (event.endsWith(":conversation:update") || event.endsWith(":conversation")) {
+    // Handle friend request events
+    newSocket.onAny((event: string, data: any) => {
+      if (event.endsWith(":friendRequest")) {
+        queryClient.invalidateQueries({ queryKey: [api.friends.listRequests.path] });
+        queryClient.invalidateQueries({ queryKey: [api.friends.status.path] });
+      } else if (event.endsWith(":friendRequestUpdate")) {
+        console.log("Friend request update received:", event, data);
+        queryClient.invalidateQueries({ queryKey: [api.friends.listRequests.path] });
+        queryClient.invalidateQueries({ queryKey: [api.friends.status.path] });
+        // Invalidate all status queries to be safe
+        queryClient.invalidateQueries({ queryKey: [api.friends.status.path] });
+        if (data?.senderId) {
+          queryClient.invalidateQueries({ queryKey: [api.friends.status.path, data.senderId] });
+        }
+        if (data?.receiverId) {
+          queryClient.invalidateQueries({ queryKey: [api.friends.status.path, data.receiverId] });
+        }
+        if (data?.status === 'accepted') {
+          queryClient.invalidateQueries({ queryKey: [api.conversations.list.path] });
+        }
+      } else if (event.endsWith(":conversation:update") || event.endsWith(":conversation")) {
         queryClient.invalidateQueries({ queryKey: [api.conversations.list.path] });
         // Re-join any new rooms we might not be in
         queryClient.getQueryData<any[]>([api.conversations.list.path])?.forEach((conv: any) => {

@@ -48,10 +48,16 @@ export default function AuthPage() {
       >
         <div className="bg-card/80 backdrop-blur-xl border border-border/50 rounded-[2rem] p-8 shadow-2xl shadow-black/5">
           
-          <div className="flex justify-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-primary to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/30 transform rotate-3">
-              <MessageSquare className="w-8 h-8 text-white -rotate-3" />
-            </div>
+          <div className="flex items-center justify-center gap-4 mb-10">
+            <motion.div 
+              whileHover={{ scale: 1.05, rotate: 5 }}
+              className="w-14 h-14 drop-shadow-2xl flex-shrink-0"
+            >
+              <img src="/logo.svg" alt="Chat Sphere Logo" className="w-full h-full object-contain" />
+            </motion.div>
+            <h2 className="text-3xl font-display font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-600">
+              Chat Sphere
+            </h2>
           </div>
 
           <div className="text-center mb-8">

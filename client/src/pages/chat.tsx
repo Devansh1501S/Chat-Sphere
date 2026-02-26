@@ -37,23 +37,41 @@ export default function ChatPage() {
         </div>
 
         {/* Main Chat Area Container */}
-        <div className="w-full h-full shrink-0 md:shrink md:flex-1 relative flex bg-secondary/10">
+        <div className="w-full h-full shrink-0 md:shrink md:flex-1 relative flex bg-secondary/10 watermark-bg overflow-hidden">
           {activeId ? (
             <ChatArea conversationId={activeId} />
           ) : (
-            <div className="hidden md:flex flex-1 flex-col items-center justify-center text-muted-foreground relative z-0">
+            <div className="hidden md:flex flex-1 flex-col items-center justify-center text-muted-foreground relative z-10">
               <motion.div 
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5 }}
                 className="flex flex-col items-center"
               >
-                <div className="w-24 h-24 rounded-full bg-white dark:bg-slate-800 shadow-xl shadow-black/5 flex items-center justify-center mb-6">
-                  <MessageSquare className="w-10 h-10 text-primary/60" />
+                <div className="flex items-center gap-4 mb-6">
+                  <motion.div 
+                    animate={{ 
+                      y: [0, -8, 0],
+                      rotate: [0, 5, 0, -5, 0]
+                    }}
+                    transition={{ 
+                      duration: 6,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                    className="w-16 h-16 drop-shadow-2xl"
+                  >
+                    <img src="/logo.svg" alt="Chat Sphere" className="w-full h-full object-contain" />
+                  </motion.div>
+                  <h2 className="text-4xl font-display font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-600">
+                    Chat Sphere
+                  </h2>
                 </div>
-                <h2 className="text-2xl font-display font-bold text-foreground">Messenger</h2>
-                <p className="mt-2 text-[15px]">Select a conversation to start chatting</p>
-                <p className="text-xs mt-8 opacity-50">End-to-End Encrypted Simulation</p>
+                <p className="mt-2 text-[15px] font-medium opacity-70">Select a conversation to start chatting</p>
+                <div className="flex items-center gap-2 mt-12 px-4 py-2 bg-primary/5 rounded-full border border-primary/10">
+                  <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+                  <p className="text-[10px] font-bold tracking-widest uppercase opacity-60">End-to-End Encrypted</p>
+                </div>
               </motion.div>
             </div>
           )}

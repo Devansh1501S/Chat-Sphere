@@ -139,6 +139,51 @@ export const api = {
       },
     },
   },
+  friends: {
+    listRequests: {
+      method: 'GET' as const,
+      path: '/api/friends/requests' as const,
+      responses: {
+        200: z.array(z.any()),
+        401: errorSchemas.unauthorized,
+      },
+    },
+    sendRequest: {
+      method: 'POST' as const,
+      path: '/api/friends/requests' as const,
+      input: z.object({
+        receiverId: z.string(),
+      }),
+      responses: {
+        201: z.any(),
+        400: errorSchemas.validation,
+        401: errorSchemas.unauthorized,
+      },
+    },
+    updateRequest: {
+      method: 'PATCH' as const,
+      path: '/api/friends/requests/:id' as const,
+      input: z.object({
+        status: z.enum(['accepted', 'rejected']),
+      }),
+      responses: {
+        200: z.object({ success: z.boolean() }),
+        401: errorSchemas.unauthorized,
+        404: errorSchemas.notFound,
+      },
+    },
+    status: {
+      method: 'GET' as const,
+      path: '/api/friends/status/:userId' as const,
+      responses: {
+        200: z.object({ 
+          status: z.enum(['none', 'pending', 'received', 'accepted']),
+          requestId: z.string().optional(),
+        }),
+        401: errorSchemas.unauthorized,
+      },
+    },
+  },
   users: {
     list: {
       method: 'GET' as const,
@@ -151,6 +196,14 @@ export const api = {
           avatarColor: z.string(),
           isOnline: z.boolean(),
         })),
+        401: errorSchemas.unauthorized,
+      },
+    },
+    search: {
+      method: 'GET' as const,
+      path: '/api/users/search' as const,
+      responses: {
+        200: z.array(z.any()),
         401: errorSchemas.unauthorized,
       },
     },

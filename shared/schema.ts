@@ -33,8 +33,9 @@ export const conversationParticipants = pgTable("conversation_participants", {
 export const messages = pgTable("messages", {
   id: varchar("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   conversationId: varchar("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
-  senderId: varchar("sender_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  senderId: varchar("sender_id").references(() => users.id, { onDelete: "cascade" }), // Nullable for system messages
   content: text("content").notNull(),
+  isSystem: boolean("is_system").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -45,9 +46,32 @@ export const typingIndicators = pgTable("typing_indicators", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const friendRequests = pgTable("friend_requests", {
+  id: varchar("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  senderId: varchar("sender_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  receiverId: varchar("receiver_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  status: text("status", { enum: ["pending", "accepted", "rejected"] }).notNull().default("pending"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const usersRelations = relations(users, ({ many }) => ({
   messages: many(messages),
   participants: many(conversationParticipants),
+  sentFriendRequests: many(friendRequests, { relationName: "sentRequests" }),
+  receivedFriendRequests: many(friendRequests, { relationName: "receivedRequests" }),
+}));
+
+export const friendRequestsRelations = relations(friendRequests, ({ one }) => ({
+  sender: one(users, {
+    fields: [friendRequests.senderId],
+    references: [users.id],
+    relationName: "sentRequests",
+  }),
+  receiver: one(users, {
+    fields: [friendRequests.receiverId],
+    references: [users.id],
+    relationName: "receivedRequests",
+  }),
 }));
 
 export const conversationsRelations = relations(conversations, ({ many }) => ({
@@ -103,6 +127,8 @@ export type InsertConversation = z.infer<typeof insertConversationSchema>;
 
 export type ConversationParticipant = typeof conversationParticipants.$inferSelect;
 
+export type FriendRequest = typeof friendRequests.$inferSelect;
+
 export type Message = typeof messages.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 
@@ -145,6 +171,10 @@ export type ConversationWithDetails = Conversation & {
 };
 
 export type MessageWithSender = Message & {
+  sender: User;
+};
+
+export type FriendRequestWithSender = FriendRequest & {
   sender: User;
 };
 

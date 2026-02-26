@@ -149,6 +149,148 @@ export async function registerRoutes(
     }
   });
 
+  app.get(api.users.search.path, verifyToken, async (req: AuthRequest, res) => {
+    try {
+      const query = req.query.q as string;
+      if (!query) {
+        return res.json([]);
+      }
+      
+      const users = await storage.searchUsers(query, req.userId!);
+      
+      const usersWithoutPasswords = users.map(user => ({
+        id: user.id,
+        username: user.username,
+        displayName: user.displayName,
+        avatarColor: user.avatarColor,
+        isOnline: user.isOnline,
+      }));
+
+      res.json(usersWithoutPasswords);
+    } catch (err) {
+      console.error("Search users error:", err);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.get(api.friends.listRequests.path, verifyToken, async (req: AuthRequest, res) => {
+    try {
+      const requests = await storage.getFriendRequests(req.userId!);
+      res.json(requests);
+    } catch (err) {
+      console.error("Get friend requests error:", err);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post(api.friends.sendRequest.path, verifyToken, async (req: AuthRequest, res) => {
+    try {
+      const { receiverId } = api.friends.sendRequest.input.parse(req.body);
+      
+      if (receiverId === req.userId) {
+        return res.status(400).json({ message: "Cannot send friend request to yourself" });
+      }
+
+      const request = await storage.sendFriendRequest(req.userId!, receiverId);
+      
+      // Emit socket event to receiver
+      io.emit(`user:${receiverId}:friendRequest`, {
+        ...request,
+        sender: await storage.getUserById(req.userId!)
+      });
+
+      res.status(201).json(request);
+    } catch (err) {
+      console.error("Send friend request error:", err);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.patch(api.friends.updateRequest.path, verifyToken, async (req: AuthRequest, res) => {
+    try {
+      const requestId = req.params.id;
+      const { status } = api.friends.updateRequest.input.parse(req.body);
+      
+      // Get the request first to know who the sender and receiver are
+      // We search across all requests to find this specific one regardless of status
+      const request = await storage.getFriendRequestById(requestId);
+      
+      if (!request) {
+        return res.status(404).json({ message: "Friend request not found" });
+      }
+
+      // Security check: only the receiver can update the status
+      if (request.receiverId !== req.userId) {
+        return res.status(403).json({ message: "Not authorized to update this request" });
+      }
+      
+      await storage.updateFriendRequestStatus(requestId, status);
+
+      if (status === 'accepted') {
+        // Automatically create a private conversation
+        const conversation = await storage.findOrCreatePrivateConversation(request.receiverId, request.senderId);
+        
+        // Create a system message "You both are friends now"
+        await storage.createMessage({
+          conversationId: conversation.id,
+          content: "You both are friends now",
+          isSystem: true,
+        });
+      }
+      
+      // Emit socket event to BOTH users to trigger UI refresh
+      const updatePayload = { requestId, status, senderId: request.senderId, receiverId: request.receiverId };
+      io.emit(`user:${request.senderId}:friendRequestUpdate`, updatePayload);
+      io.emit(`user:${request.receiverId}:friendRequestUpdate`, updatePayload);
+      
+      res.json({ success: true });
+    } catch (err) {
+      console.error("Update friend request error:", err);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.get(api.friends.status.path, verifyToken, async (req: AuthRequest, res) => {
+    try {
+      const otherUserId = req.params.userId;
+      
+      // Check if they are already friends first
+      const areFriends = await storage.areFriends(req.userId!, otherUserId);
+      if (areFriends) {
+        return res.json({ status: "accepted" });
+      }
+
+      const sentRequests = await storage.getSentFriendRequests(req.userId!);
+      // Use a more direct check for received requests that doesn't filter by pending
+      const allRequests = await storage.getFriendRequests(req.userId!); // Wait, this only returns pending.
+      
+      // Let's use a new storage method or just search across all sent/received
+      const sent = sentRequests.find(r => r.receiverId === otherUserId);
+      
+      if (sent) {
+        if (sent.status === "pending") {
+          return res.json({ status: "pending", requestId: sent.id });
+        }
+        if (sent.status === "rejected") {
+          // If it was rejected, we want to allow sending again
+          return res.json({ status: "none" });
+        }
+      }
+      
+      // For received requests, we still only care if it's pending
+      const received = allRequests.find(r => r.senderId === otherUserId && r.status === "pending");
+      
+      if (received) {
+        return res.json({ status: "received", requestId: received.id });
+      }
+
+      res.json({ status: "none" });
+    } catch (err) {
+      console.error("Get friend status error:", err);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   app.get(api.conversations.list.path, verifyToken, async (req: AuthRequest, res) => {
     try {
       const conversations = await storage.getConversationsByUserId(req.userId!);
@@ -164,9 +306,17 @@ export async function registerRoutes(
       const input = api.conversations.create.input.parse(req.body);
       
       if (!input.isGroup && input.participantIds.length === 1) {
+        const otherUserId = input.participantIds[0];
+        
+        // Check if they are friends
+        const areFriends = await storage.areFriends(req.userId!, otherUserId);
+        if (!areFriends) {
+          return res.status(403).json({ message: "You can only chat with friends" });
+        }
+
         const conversation = await storage.findOrCreatePrivateConversation(
           req.userId!,
-          input.participantIds[0]
+          otherUserId
         );
         
         const participants = await storage.getConversationParticipants(conversation.id);

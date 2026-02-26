@@ -142,6 +142,15 @@ export default function ChatArea({ conversationId }: { conversationId: string })
         </div>
 
         {messages?.map((msg: any, i: number) => {
+          if (msg.isSystem) {
+            return (
+              <div key={msg.id} className="text-center my-2">
+                <span className="bg-secondary/50 text-muted-foreground text-[11px] font-medium px-3 py-1 rounded-full backdrop-blur-sm shadow-sm border border-border/50">
+                  {msg.content}
+                </span>
+              </div>
+            );
+          }
           const isMe = msg.senderId === user?.id;
           const showAvatar = isGroup && !isMe && (i === 0 || messages[i-1].senderId !== msg.senderId);
           

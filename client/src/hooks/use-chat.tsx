@@ -49,6 +49,79 @@ export function useUsers() {
   });
 }
 
+export function useSearchUsers(query: string) {
+  return useQuery({
+    queryKey: [api.users.search.path, query],
+    queryFn: async () => {
+      if (!query) return [];
+      const data = await apiFetch(`${api.users.search.path}?q=${encodeURIComponent(query)}`);
+      return api.users.search.responses[200].parse(data);
+    },
+    enabled: query.length >= 1,
+  });
+}
+
+export function useFriendRequests() {
+  return useQuery({
+    queryKey: [api.friends.listRequests.path],
+    queryFn: async () => {
+      const data = await apiFetch(api.friends.listRequests.path);
+      return api.friends.listRequests.responses[200].parse(data);
+    },
+  });
+}
+
+export function useFriendStatus(userId: string) {
+  return useQuery({
+    queryKey: [api.friends.status.path, userId],
+    queryFn: async () => {
+      const url = buildUrl(api.friends.status.path, { userId });
+      const data = await apiFetch(url);
+      return api.friends.status.responses[200].parse(data);
+    },
+    enabled: !!userId,
+  });
+}
+
+export function useSendFriendRequest() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (receiverId: string) => {
+      const data = { receiverId };
+      const validated = api.friends.sendRequest.input.parse(data);
+      const res = await apiFetch(api.friends.sendRequest.path, {
+        method: api.friends.sendRequest.method,
+        body: JSON.stringify(validated),
+      });
+      return api.friends.sendRequest.responses[201].parse(res);
+    },
+    onSuccess: (_, receiverId) => {
+      queryClient.invalidateQueries({ queryKey: [api.friends.status.path, receiverId] });
+    },
+  });
+}
+
+export function useUpdateFriendRequest() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ requestId, status }: { requestId: string, status: 'accepted' | 'rejected' }) => {
+      const url = buildUrl(api.friends.updateRequest.path, { id: requestId });
+      const data = { status };
+      const validated = api.friends.updateRequest.input.parse(data);
+      const res = await apiFetch(url, {
+        method: api.friends.updateRequest.method,
+        body: JSON.stringify(validated),
+      });
+      return api.friends.updateRequest.responses[200].parse(res);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.friends.listRequests.path] });
+      queryClient.invalidateQueries({ queryKey: [api.friends.status.path] });
+      queryClient.invalidateQueries({ queryKey: [api.conversations.list.path] });
+    },
+  });
+}
+
 export function useCreateConversation() {
   const queryClient = useQueryClient();
   return useMutation({

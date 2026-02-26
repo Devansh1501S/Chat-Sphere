@@ -1,0 +1,47 @@
+<svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    @keyframes blink {
+      0%, 100% { opacity: 1; filter: url(#glow); }
+      50% { opacity: 0.7; filter: url(#glow-intense); }
+    }
+    @keyframes rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-3px); }
+    }
+    .logo-main {
+      animation: blink 2s ease-in-out infinite;
+      transform-origin: center;
+    }
+    .logo-ring {
+      animation: rotate 8s linear infinite;
+      transform-origin: center;
+    }
+    .logo-icon {
+      animation: float 2.5s ease-in-out infinite;
+      transform-origin: center;
+    }
+  </style>
+  <defs>
+    <linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B5CF6" />
+      <stop offset="100%" stop-color="#6366F1" />
+    </linearGradient>
+    <filter id="glow" x="-25%" y="-25%" width="150%" height="150%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+    <filter id="glow-intense" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  <g class="logo-main">
+    <circle cx="50" cy="50" r="45" fill="url(#logo-gradient)" />
+    <circle class="logo-ring" cx="50" cy="50" r="40" stroke="white" stroke-opacity="0.4" stroke-width="2" stroke-dasharray="8 16" />
+    <path class="logo-icon" d="M35 50C35 41.7157 41.7157 35 50 35C58.2843 35 65 41.7157 65 50C65 58.2843 58.2843 65 50 65C47.2386 65 45 67.2386 45 70V75L35 65V50Z" fill="white" />
+  </g>
+</svg>
