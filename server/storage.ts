@@ -142,8 +142,12 @@ export class DatabaseStorage implements IStorage {
 
       let lastMessage;
       if (lastMessages.length > 0) {
-        const sender = await this.getUserById(lastMessages[0].senderId);
-        lastMessage = { ...lastMessages[0], sender: sender! };
+        const lastMsg = lastMessages[0];
+        let sender;
+        if (lastMsg.senderId) {
+          sender = await this.getUserById(lastMsg.senderId);
+        }
+        lastMessage = { ...lastMsg, sender: sender! };
       }
 
       const unreadCount = await this.getUnreadCount(userId, conv.id);
@@ -310,11 +314,17 @@ export class DatabaseStorage implements IStorage {
       };
     }
 
-    const sender = await this.getUserById(message.senderId!);
-    
+    if (message.senderId) {
+      const sender = await this.getUserById(message.senderId);
+      return {
+        ...message,
+        sender: sender!,
+      };
+    }
+
     return {
       ...message,
-      sender: sender!,
+      sender: undefined as any,
     };
   }
 
@@ -595,8 +605,8 @@ export class MemStorage implements IStorage {
         if (lastMessage) {
           if ((lastMessage as any).isSystem) {
             lastMessageWithSender = { ...lastMessage, sender: undefined as any };
-          } else {
-            const sender = await this.getUserById(lastMessage.senderId!);
+          } else if (lastMessage.senderId) {
+            const sender = await this.getUserById(lastMessage.senderId);
             if (sender) {
               lastMessageWithSender = { ...lastMessage, sender };
             }
@@ -733,9 +743,14 @@ export class MemStorage implements IStorage {
       };
     }
 
-    const sender = await this.getUserById(message.senderId!);
+    if (message.senderId) {
+      const sender = await this.getUserById(message.senderId);
+      this.save();
+      return { ...message, sender: sender! };
+    }
+
     this.save();
-    return { ...message, sender: sender! };
+    return { ...message, sender: undefined as any };
   }
 
   async findOrCreatePrivateConversation(userId1: string, userId2: string): Promise<Conversation> {
